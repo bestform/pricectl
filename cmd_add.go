@@ -25,8 +25,19 @@ func cmdAdd(url string) {
 	}
 
 	if len(candidates) == 0 {
-		fmt.Println(yellow("No price candidates found."))
-		fmt.Println("Try a different URL or check that the page includes the price in its static HTML.")
+		fmt.Println(yellow("No price candidates found automatically."))
+		fmt.Println()
+		fmt.Println("You can add the product manually by editing ~/.pricewatcher/config.json")
+		fmt.Println("and appending an entry like this:")
+		fmt.Println()
+		fmt.Println(`  {`)
+		fmt.Println(`    "name": "My Product",`)
+		fmt.Printf(`    "url": "%s",`+"\n", url)
+		fmt.Println(`    "selector": "span.price",`)
+		fmt.Println(`    "regex": "([\\d.,]+)"`)
+		fmt.Println(`  }`)
+		fmt.Println()
+		fmt.Println("Use your browser's developer tools to find the right CSS selector.")
 		os.Exit(1)
 	}
 
