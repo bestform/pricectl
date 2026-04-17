@@ -26,7 +26,7 @@ func cmdAdd(url string) {
 
 	if len(candidates) == 0 {
 		fmt.Println(yellow("No price candidates found."))
-		fmt.Println("Tip: use 'pricewatcher inspect <url> --selector <selector>' to search manually.")
+		fmt.Println("Try a different URL or check that the page includes the price in its static HTML.")
 		os.Exit(1)
 	}
 
