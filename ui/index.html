@@ -111,6 +111,13 @@
       text-overflow: ellipsis;
       max-width: 420px;
     }
+    .product-url a {
+      color: inherit;
+      text-decoration: none;
+    }
+    .product-url a:hover {
+      text-decoration: underline;
+    }
 
     .price {
       font-size: 17px;
@@ -231,7 +238,7 @@
         <div class="product-row">
           <div>
             <div class="product-name">${esc(p.name)}</div>
-            <div class="product-url">${esc(p.url)}</div>
+            <div class="product-url"><a href="${esc(p.url)}" target="_blank" rel="noopener">${esc(p.url)}</a></div>
           </div>
           <div class="price">${fmtCents(p.price_cents)}</div>
         </div>`).join('');
@@ -286,7 +293,7 @@
           return `<div class="product-row">
             <div>
               <div class="product-name">${esc(r.name)}</div>
-              <div class="product-url">${esc(r.url)}</div>
+              <div class="product-url"><a href="${esc(r.url)}" target="_blank" rel="noopener">${esc(r.url)}</a></div>
             </div>
             <span class="badge badge-red error-text">ERROR: ${esc(r.error)}</span>
           </div>`;
@@ -297,7 +304,7 @@
         return `<div class="product-row">
           <div>
             <div class="product-name">${esc(r.name)}</div>
-            <div class="product-url">${esc(r.url)}</div>
+            <div class="product-url"><a href="${esc(r.url)}" target="_blank" rel="noopener">${esc(r.url)}</a></div>
           </div>
           <div style="display:flex;align-items:center;gap:12px">
             ${badge}
