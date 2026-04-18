@@ -12,11 +12,12 @@ import (
 )
 
 // fetchPrice fetches the URL of a product, applies the CSS selector and
-// optional regex, and returns the price in cents.
-func fetchPrice(p Product) (int64, error) {
+// optional regex, and returns the price in cents and the outerHTML of the
+// matched element.
+func fetchPrice(p Product) (int64, string, error) {
 	doc, err := fetchDoc(p.URL)
 	if err != nil {
-		return 0, err
+		return 0, "", err
 	}
 	return extractPrice(doc, p.Selector, p.Regex)
 }
@@ -55,14 +56,16 @@ func fetchDoc(url string) (*goquery.Document, error) {
 // a price in cents from their text content.
 // If regex is non-empty, it is applied to the element text to isolate the number.
 // If the first match is not parseable as a price, subsequent matches are tried.
-func extractPrice(doc *goquery.Document, selector, pattern string) (int64, error) {
+// Returns the price in cents and the outerHTML of the matched element.
+func extractPrice(doc *goquery.Document, selector, pattern string) (int64, string, error) {
 	matches := doc.Find(selector)
 	if matches.Length() == 0 {
-		return 0, fmt.Errorf("selector %q matched no elements", selector)
+		return 0, "", fmt.Errorf("selector %q matched no elements", selector)
 	}
 
 	var lastErr error
 	var result int64
+	var elementHTML string
 	found := false
 
 	matches.EachWithBreak(func(_ int, sel *goquery.Selection) bool {
@@ -93,18 +96,25 @@ func extractPrice(doc *goquery.Document, selector, pattern string) (int64, error
 			return true // try next element
 		}
 
+		html, err := goquery.OuterHtml(sel)
+		if err != nil {
+			lastErr = fmt.Errorf("could not get outerHTML: %w", err)
+			return true // try next element
+		}
+
 		result = cents
+		elementHTML = html
 		found = true
 		return false // stop iterating
 	})
 
 	if found {
-		return result, nil
+		return result, elementHTML, nil
 	}
 	if lastErr != nil {
-		return 0, fmt.Errorf("selector %q matched %d element(s) but none contained a valid price (last error: %w)", selector, matches.Length(), lastErr)
+		return 0, "", fmt.Errorf("selector %q matched %d element(s) but none contained a valid price (last error: %w)", selector, matches.Length(), lastErr)
 	}
-	return 0, fmt.Errorf("selector %q matched no parseable price", selector)
+	return 0, "", fmt.Errorf("selector %q matched no parseable price", selector)
 }
 
 // parsePrice converts a price string to cents.

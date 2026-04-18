@@ -135,10 +135,11 @@
       padding: 2px 8px;
       border-radius: 20px;
     }
-    .badge-green { background: rgba(52,211,153,0.12); color: var(--green); }
-    .badge-red   { background: rgba(248,113,113,0.12); color: var(--red); }
-    .badge-muted { background: rgba(107,114,128,0.12); color: var(--muted); }
-    .badge-new   { background: rgba(96,165,250,0.12);  color: var(--blue); }
+    .badge-green  { background: rgba(52,211,153,0.12); color: var(--green); }
+    .badge-red    { background: rgba(248,113,113,0.12); color: var(--red); }
+    .badge-muted  { background: rgba(107,114,128,0.12); color: var(--muted); }
+    .badge-new    { background: rgba(96,165,250,0.12);  color: var(--blue); }
+    .badge-yellow { background: rgba(251,191,36,0.12);  color: var(--yellow); }
 
     .history-block {
       border-bottom: 1px solid var(--border);
@@ -300,7 +301,9 @@
         }
         const badge = r.is_new
           ? '<span class="badge badge-new">★ new</span>'
-          : diffBadge(r.old_price_cents, r.price_cents);
+          : r.raw_text_changed
+            ? diffBadge(r.old_price_cents, r.price_cents) + ' <span class="badge badge-yellow">⚠ verify price</span>'
+            : diffBadge(r.old_price_cents, r.price_cents);
         return `<div class="product-row">
           <div>
             <div class="product-name">${esc(r.name)}</div>
@@ -313,9 +316,10 @@
         </div>`;
       }).join('');
 
-      const changed = data.filter(r => r.changed).length;
-      const errors  = data.filter(r => r.error).length;
-      status.textContent = `Done. ${data.length} products checked, ${changed} changed, ${errors} errors.`;
+      const changed  = data.filter(r => r.changed).length;
+      const warnings = data.filter(r => r.raw_text_changed).length;
+      const errors   = data.filter(r => r.error).length;
+      status.textContent = `Done. ${data.length} products checked, ${changed} changed, ${warnings} warnings, ${errors} errors.`;
 
       // Hide products section — check results already show current prices
       document.getElementById('products-section').style.display = 'none';

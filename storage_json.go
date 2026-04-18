@@ -83,3 +83,17 @@ func (s *jsonStore) LatestPrice(productName string) (*PriceEntry, error) {
 	e := entries[len(entries)-1]
 	return &e, nil
 }
+
+func (s *jsonStore) UpdateLatestElementHTML(productName string, elementHTML string) error {
+	pd, err := s.load()
+	if err != nil {
+		return err
+	}
+	entries := pd.Prices[productName]
+	if len(entries) == 0 {
+		return nil
+	}
+	entries[len(entries)-1].ElementHTML = elementHTML
+	pd.Prices[productName] = entries
+	return s.save(pd)
+}
