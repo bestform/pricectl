@@ -53,6 +53,10 @@ func cmdCheck() {
 			old := formatCents(*r.oldPrice)
 			fmt.Printf("  %-40s %s  %s  (was %s, %s)\n",
 				bold(r.product.Name), bold(price), arrow, old, diff)
+		} else if r.rawTextChanged {
+			fmt.Printf("  %-40s %s  %s  %s\n", r.product.Name, price,
+				priceArrow(*r.oldPrice, r.newPrice),
+				yellow("⚠ page structure changed — verify price manually"))
 		} else {
 			fmt.Printf("  %-40s %s  %s\n", r.product.Name, price, priceArrow(*r.oldPrice, r.newPrice))
 		}

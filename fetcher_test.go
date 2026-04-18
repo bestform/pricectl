@@ -62,31 +62,35 @@ func TestParsePrice(t *testing.T) {
 
 func TestExtractPrice(t *testing.T) {
 	tests := []struct {
-		name      string
-		html      string
-		selector  string
-		regex     string
-		wantCents int64
-		wantErr   bool
+		name            string
+		html            string
+		selector        string
+		regex           string
+		wantCents       int64
+		wantElementHTML string
+		wantErr         bool
 	}{
 		{
-			name:      "simple match",
-			html:      `<span class="price">29.99</span>`,
-			selector:  ".price",
-			wantCents: 2999,
+			name:            "simple match",
+			html:            `<span class="price">29.99</span>`,
+			selector:        ".price",
+			wantCents:       2999,
+			wantElementHTML: `<span class="price">29.99</span>`,
 		},
 		{
-			name:      "first element unparseable, second is valid",
-			html:      `<span class="price">Trial</span><span class="price">$39</span>`,
-			selector:  ".price",
-			wantCents: 3900,
+			name:            "first element unparseable, second is valid",
+			html:            `<span class="price">Trial</span><span class="price">$39</span>`,
+			selector:        ".price",
+			wantCents:       3900,
+			wantElementHTML: `<span class="price">$39</span>`,
 		},
 		{
-			name:      "regex extracts number from surrounding text",
-			html:      `<span class="price">Now only 14,99 EUR!</span>`,
-			selector:  ".price",
-			regex:     `([\d,]+)`,
-			wantCents: 1499,
+			name:            "regex extracts number from surrounding text",
+			html:            `<span class="price">Now only 14,99 EUR!</span>`,
+			selector:        ".price",
+			regex:           `([\d,]+)`,
+			wantCents:       1499,
+			wantElementHTML: `<span class="price">Now only 14,99 EUR!</span>`,
 		},
 		{
 			name:     "selector matches nothing",
@@ -108,29 +112,32 @@ func TestExtractPrice(t *testing.T) {
 			wantErr:  true,
 		},
 		{
-			name:      "german price format",
-			html:      `<span class="price">1.299,00</span>`,
-			selector:  ".price",
-			wantCents: 129900,
+			name:            "german price format",
+			html:            `<span class="price">1.299,00</span>`,
+			selector:        ".price",
+			wantCents:       129900,
+			wantElementHTML: `<span class="price">1.299,00</span>`,
 		},
 		{
-			name:      "price with currency symbol",
-			html:      `<span class="price">€ 49,99</span>`,
-			selector:  ".price",
-			wantCents: 4999,
+			name:            "price with currency symbol",
+			html:            `<span class="price">€ 49,99</span>`,
+			selector:        ".price",
+			wantCents:       4999,
+			wantElementHTML: `<span class="price">€ 49,99</span>`,
 		},
 		{
-			name:      "multiple elements, picks first valid",
-			html:      `<span class="price">free</span><span class="price">19.99</span><span class="price">24.99</span>`,
-			selector:  ".price",
-			wantCents: 1999,
+			name:            "multiple elements, picks first valid",
+			html:            `<span class="price">free</span><span class="price">19.99</span><span class="price">24.99</span>`,
+			selector:        ".price",
+			wantCents:       1999,
+			wantElementHTML: `<span class="price">19.99</span>`,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			doc := docFromString(tt.html)
-			got, err := extractPrice(doc, tt.selector, tt.regex)
+			got, elementHTML, err := extractPrice(doc, tt.selector, tt.regex)
 			if tt.wantErr {
 				if err == nil {
 					t.Errorf("expected error, got nil (price: %d)", got)
@@ -143,6 +150,9 @@ func TestExtractPrice(t *testing.T) {
 			}
 			if got != tt.wantCents {
 				t.Errorf("got %d cents, want %d cents", got, tt.wantCents)
+			}
+			if elementHTML != tt.wantElementHTML {
+				t.Errorf("got elementHTML %q, want %q", elementHTML, tt.wantElementHTML)
 			}
 		})
 	}

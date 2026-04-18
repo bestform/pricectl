@@ -15,13 +15,14 @@ type productResponse struct {
 
 // checkResponse is the JSON representation of a check result.
 type checkResponse struct {
-	Name       string `json:"name"`
-	URL        string `json:"url"`
-	PriceCents int64  `json:"price_cents"`
-	OldPrice   *int64 `json:"old_price_cents"`
-	Changed    bool   `json:"changed"`
-	IsNew      bool   `json:"is_new"`
-	Error      string `json:"error,omitempty"`
+	Name           string `json:"name"`
+	URL            string `json:"url"`
+	PriceCents     int64  `json:"price_cents"`
+	OldPrice       *int64 `json:"old_price_cents"`
+	Changed        bool   `json:"changed"`
+	IsNew          bool   `json:"is_new"`
+	RawTextChanged bool   `json:"raw_text_changed"`
+	Error          string `json:"error,omitempty"`
 }
 
 // historyResponse is the JSON representation of history for all products.
@@ -69,12 +70,13 @@ func apiCheck(w http.ResponseWriter, r *http.Request) {
 	for i, p := range cfg.Products {
 		result := checkProduct(p, store, fetchPrice)
 		cr := checkResponse{
-			Name:       p.Name,
-			URL:        p.URL,
-			PriceCents: result.newPrice,
-			OldPrice:   result.oldPrice,
-			Changed:    result.changed,
-			IsNew:      result.oldPrice == nil && result.err == nil,
+			Name:           p.Name,
+			URL:            p.URL,
+			PriceCents:     result.newPrice,
+			OldPrice:       result.oldPrice,
+			Changed:        result.changed,
+			IsNew:          result.oldPrice == nil && result.err == nil,
+			RawTextChanged: result.rawTextChanged,
 		}
 		if result.err != nil {
 			cr.Error = result.err.Error()

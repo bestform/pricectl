@@ -33,17 +33,32 @@ func (m *memStore) LatestPrice(name string) (*PriceEntry, error) {
 	return &e, nil
 }
 
-// stubFetch returns a fetchFn that always returns the given cents value.
+func (m *memStore) UpdateLatestElementHTML(name string, elementHTML string) error {
+	entries := m.entries[name]
+	if len(entries) == 0 {
+		return nil
+	}
+	entries[len(entries)-1].ElementHTML = elementHTML
+	m.entries[name] = entries
+	return nil
+}
+
+// stubFetch returns a fetchFn that always returns the given cents value and raw text.
 func stubFetch(cents int64) fetchFn {
-	return func(p Product) (int64, error) {
-		return cents, nil
+	return stubFetchWithRaw(cents, fmt.Sprintf("%d", cents))
+}
+
+// stubFetchWithRaw returns a fetchFn that returns the given cents value and raw text.
+func stubFetchWithRaw(cents int64, rawText string) fetchFn {
+	return func(p Product) (int64, string, error) {
+		return cents, rawText, nil
 	}
 }
 
 // failFetch returns a fetchFn that always returns an error.
 func failFetch(msg string) fetchFn {
-	return func(p Product) (int64, error) {
-		return 0, fmt.Errorf("%s", msg)
+	return func(p Product) (int64, string, error) {
+		return 0, "", fmt.Errorf("%s", msg)
 	}
 }
 
@@ -78,15 +93,18 @@ func TestCheckProduct_FirstCheck(t *testing.T) {
 
 func TestCheckProduct_PriceUnchanged(t *testing.T) {
 	store := newMemStore()
-	_ = store.AddEntry(testProduct.Name, PriceEntry{PriceCents: 2999, Timestamp: time.Now()})
+	_ = store.AddEntry(testProduct.Name, PriceEntry{PriceCents: 2999, ElementHTML: "<span>2999</span>", Timestamp: time.Now()})
 
-	r := checkProduct(testProduct, store, stubFetch(2999))
+	r := checkProduct(testProduct, store, stubFetchWithRaw(2999, "<span>2999</span>"))
 
 	if r.err != nil {
 		t.Fatalf("unexpected error: %v", r.err)
 	}
 	if r.changed {
 		t.Errorf("changed should be false when price is the same")
+	}
+	if r.rawTextChanged {
+		t.Errorf("rawTextChanged should be false when element HTML is the same")
 	}
 	if *r.oldPrice != 2999 {
 		t.Errorf("oldPrice = %d, want 2999", *r.oldPrice)
@@ -101,7 +119,7 @@ func TestCheckProduct_PriceUnchanged(t *testing.T) {
 
 func TestCheckProduct_PriceDropped(t *testing.T) {
 	store := newMemStore()
-	_ = store.AddEntry(testProduct.Name, PriceEntry{PriceCents: 4999, Timestamp: time.Now()})
+	_ = store.AddEntry(testProduct.Name, PriceEntry{PriceCents: 4999, ElementHTML: "<span>4999</span>", Timestamp: time.Now()})
 
 	r := checkProduct(testProduct, store, stubFetch(2999))
 
@@ -127,7 +145,7 @@ func TestCheckProduct_PriceDropped(t *testing.T) {
 
 func TestCheckProduct_PriceRose(t *testing.T) {
 	store := newMemStore()
-	_ = store.AddEntry(testProduct.Name, PriceEntry{PriceCents: 2999, Timestamp: time.Now()})
+	_ = store.AddEntry(testProduct.Name, PriceEntry{PriceCents: 2999, ElementHTML: "<span>2999</span>", Timestamp: time.Now()})
 
 	r := checkProduct(testProduct, store, stubFetch(4999))
 
@@ -154,5 +172,53 @@ func TestCheckProduct_FetchError(t *testing.T) {
 	entries, _ := store.GetHistory(testProduct.Name)
 	if len(entries) != 0 {
 		t.Errorf("expected no stored entries on fetch error, got %d", len(entries))
+	}
+}
+
+func TestCheckProduct_RawTextChanged(t *testing.T) {
+	store := newMemStore()
+	_ = store.AddEntry(testProduct.Name, PriceEntry{PriceCents: 2999, ElementHTML: `<span class="price">29,99</span>`, Timestamp: time.Now()})
+
+	// Same price, but different element HTML — simulates a page restructure
+	r := checkProduct(testProduct, store, stubFetchWithRaw(2999, `<span class="price old-price"><del>29,99</del></span>`))
+
+	if r.err != nil {
+		t.Fatalf("unexpected error: %v", r.err)
+	}
+	if r.changed {
+		t.Errorf("changed should be false: price is the same")
+	}
+	if !r.rawTextChanged {
+		t.Errorf("rawTextChanged should be true when element HTML differs despite same price")
+	}
+
+	// No new entry should have been added
+	entries, _ := store.GetHistory(testProduct.Name)
+	if len(entries) != 1 {
+		t.Errorf("expected 1 stored entry (no new one), got %d", len(entries))
+	}
+}
+
+func TestCheckProduct_BackfillRawText(t *testing.T) {
+	store := newMemStore()
+	// Simulate a pre-existing entry without ElementHTML (empty string)
+	_ = store.AddEntry(testProduct.Name, PriceEntry{PriceCents: 2999, Timestamp: time.Now()})
+
+	r := checkProduct(testProduct, store, stubFetchWithRaw(2999, `<span class="price">29,99</span>`))
+
+	if r.err != nil {
+		t.Fatalf("unexpected error: %v", r.err)
+	}
+	if r.rawTextChanged {
+		t.Errorf("rawTextChanged should be false during backfill (no previous ElementHTML to compare)")
+	}
+
+	// No new entry should have been added — backfill updates in place
+	entries, _ := store.GetHistory(testProduct.Name)
+	if len(entries) != 1 {
+		t.Errorf("expected 1 stored entry after backfill, got %d", len(entries))
+	}
+	if entries[0].ElementHTML != `<span class="price">29,99</span>` {
+		t.Errorf("ElementHTML after backfill = %q, want %q", entries[0].ElementHTML, `<span class="price">29,99</span>`)
 	}
 }
