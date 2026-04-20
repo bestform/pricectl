@@ -14,7 +14,9 @@ locally on the developer's own machine. The user configures a list of products
 tool periodically fetches those pages, extracts the price, and reports changes.
 
 The tool is primarily a CLI, designed to be invoked from a terminal or via a
-cron job. It also ships an optional web UI for a more visual overview.
+cron job. All CLI commands that produce output support a `--json` flag for
+machine-readable output suitable for scripts and pipelines. It also ships an
+optional web UI for a more visual overview.
 
 ---
 
@@ -72,12 +74,24 @@ The web UI is a single HTML file embedded directly into the binary via Go's
 `embed` package. It uses plain HTML, CSS, and vanilla JavaScript — no build
 step, no npm, no external framework. The server exposes three JSON endpoints
 (`/api/products`, `/api/check`, `/api/history`) that the frontend consumes.
+`/api/check` is restricted to POST requests to prevent accidental triggering
+(e.g. by browser prefetch).
 
 The UI was added as a convenience layer on top of the CLI. The CLI remains the
 primary interface and is the one recommended for cron-based automation.
 
 When check results are displayed, the product list is hidden because the check
 results already contain the same information — showing both would be redundant.
+
+### Structure change detection
+
+When `checkProduct` finds that the price is unchanged but the outerHTML of the
+matched element differs from the stored value, it flags this as a structure
+change (`structure_changed` in JSON output). This can indicate a sale overlay,
+a redesigned page, or a selector that now matches a different element — all
+cases where the user should verify the price manually. The raw element HTML is
+stored in `PriceEntry.ElementHTML` and is deliberately excluded from all JSON
+output (both CLI and API) since it is an internal implementation detail.
 
 ---
 
@@ -103,7 +117,8 @@ results already contain the same information — showing both would be redundant
 | `Makefile` | `build`, `test`, `install`, `serve` targets |
 
 Test files exist for: `checker`, `fetcher` (parsePrice, extractPrice),
-`heuristic`, and `output`.
+`heuristic`, `output`, `json_output` (all JSON write functions), and `main`
+(hasFlag utility).
 
 ---
 
