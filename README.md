@@ -164,3 +164,9 @@ other tools. For example, to list only products whose price dropped:
 pricewatcher only works with pages that include the price in the static HTML
 response. Pages that load prices dynamically via JavaScript after the initial
 page load are not supported.
+
+## Architecture
+
+See [CONTEXT.md](CONTEXT.md) for a detailed record of architectural decisions,
+design rationale, and known limitations. It is intended as a reference for
+picking up development without losing context.
