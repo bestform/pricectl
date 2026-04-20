@@ -1,5 +1,5 @@
 # Binary
-pricectl
+/pricectl
 
 # Go build cache
 *.test

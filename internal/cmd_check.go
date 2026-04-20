@@ -1,4 +1,4 @@
-package main
+package pricectl
 
 import (
 	"encoding/json"
@@ -19,7 +19,7 @@ type checkJSONOutput struct {
 	Error            string `json:"error,omitempty"`
 }
 
-func cmdCheck(jsonOutput bool) {
+func CmdCheck(jsonOutput bool) {
 	cfg, err := loadConfig()
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "error:", err)

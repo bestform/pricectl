@@ -1,4 +1,4 @@
-package main
+package pricectl
 
 import (
 	"embed"
@@ -10,7 +10,7 @@ import (
 //go:embed ui/index.html
 var uiFiles embed.FS
 
-func cmdServe() {
+func CmdServe() {
 	port := "8080"
 
 	mux := http.NewServeMux()

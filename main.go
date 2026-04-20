@@ -3,6 +3,8 @@ package main
 import (
 	"fmt"
 	"os"
+
+	"pricectl/internal"
 )
 
 func main() {
@@ -13,9 +15,9 @@ func main() {
 
 	switch os.Args[1] {
 	case "check":
-		cmdCheck(hasFlag(os.Args[2:], "--json"))
+		pricectl.CmdCheck(hasFlag(os.Args[2:], "--json"))
 	case "list":
-		cmdList(hasFlag(os.Args[2:], "--json"))
+		pricectl.CmdList(hasFlag(os.Args[2:], "--json"))
 	case "history":
 		args := os.Args[2:]
 		jsonOutput := hasFlag(args, "--json")
@@ -26,15 +28,15 @@ func main() {
 				break
 			}
 		}
-		cmdHistory(name, jsonOutput)
+		pricectl.CmdHistory(name, jsonOutput)
 	case "serve":
-		cmdServe()
+		pricectl.CmdServe()
 	case "add":
 		if len(os.Args) < 3 {
 			fmt.Fprintln(os.Stderr, "usage: pricectl add <url>")
 			os.Exit(1)
 		}
-		cmdAdd(os.Args[2])
+		pricectl.CmdAdd(os.Args[2])
 	default:
 		fmt.Fprintf(os.Stderr, "unknown command: %s\n", os.Args[1])
 		printUsage()

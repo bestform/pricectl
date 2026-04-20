@@ -1,4 +1,4 @@
-package main
+package pricectl
 
 import (
 	"bufio"
@@ -9,7 +9,7 @@ import (
 	"strings"
 )
 
-func cmdAdd(url string) {
+func CmdAdd(url string) {
 	fmt.Printf("Loading %s ...\n", url)
 	doc, err := fetchDoc(url)
 	if err != nil {

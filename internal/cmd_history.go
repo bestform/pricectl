@@ -1,4 +1,4 @@
-package main
+package pricectl
 
 import (
 	"encoding/json"
@@ -21,7 +21,7 @@ type historyJSONOutput struct {
 	Entries []historyEntryJSONOutput `json:"entries"`
 }
 
-func cmdHistory(name string, jsonOutput bool) {
+func CmdHistory(name string, jsonOutput bool) {
 	store, err := newJSONStore()
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "error:", err)

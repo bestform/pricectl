@@ -1,4 +1,4 @@
-package main
+package pricectl
 
 import (
 	"encoding/json"
@@ -14,7 +14,7 @@ type listJSONOutput struct {
 	PriceCents *int64 `json:"price_cents"`
 }
 
-func cmdList(jsonOutput bool) {
+func CmdList(jsonOutput bool) {
 	cfg, err := loadConfig()
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "error:", err)
