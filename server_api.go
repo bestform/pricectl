@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"time"
 )
 
 // productResponse is the JSON representation of a product with its latest price.
@@ -15,20 +16,26 @@ type productResponse struct {
 
 // checkResponse is the JSON representation of a check result.
 type checkResponse struct {
-	Name           string `json:"name"`
-	URL            string `json:"url"`
-	PriceCents     int64  `json:"price_cents"`
-	OldPrice       *int64 `json:"old_price_cents"`
-	Changed        bool   `json:"changed"`
-	IsNew          bool   `json:"is_new"`
-	RawTextChanged bool   `json:"raw_text_changed"`
-	Error          string `json:"error,omitempty"`
+	Name             string `json:"name"`
+	URL              string `json:"url"`
+	PriceCents       int64  `json:"price_cents"`
+	OldPrice         *int64 `json:"old_price_cents"`
+	Changed          bool   `json:"changed"`
+	IsNew            bool   `json:"is_new"`
+	StructureChanged bool   `json:"structure_changed"`
+	Error            string `json:"error,omitempty"`
+}
+
+// historyEntryResponse is the JSON representation of a single price entry for the API.
+type historyEntryResponse struct {
+	PriceCents int64     `json:"price_cents"`
+	Timestamp  time.Time `json:"timestamp"`
 }
 
 // historyResponse is the JSON representation of history for all products.
 type historyResponse struct {
-	Name    string       `json:"name"`
-	Entries []PriceEntry `json:"entries"`
+	Name    string                 `json:"name"`
+	Entries []historyEntryResponse `json:"entries"`
 }
 
 func apiProducts(w http.ResponseWriter, r *http.Request) {
@@ -55,6 +62,10 @@ func apiProducts(w http.ResponseWriter, r *http.Request) {
 }
 
 func apiCheck(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, `{"error":"method not allowed"}`, http.StatusMethodNotAllowed)
+		return
+	}
 	cfg, err := loadConfig()
 	if err != nil {
 		jsonError(w, err, http.StatusInternalServerError)
@@ -70,13 +81,13 @@ func apiCheck(w http.ResponseWriter, r *http.Request) {
 	for i, p := range cfg.Products {
 		result := checkProduct(p, store, fetchPrice)
 		cr := checkResponse{
-			Name:           p.Name,
-			URL:            p.URL,
-			PriceCents:     result.newPrice,
-			OldPrice:       result.oldPrice,
-			Changed:        result.changed,
-			IsNew:          result.oldPrice == nil && result.err == nil,
-			RawTextChanged: result.rawTextChanged,
+			Name:             p.Name,
+			URL:              p.URL,
+			PriceCents:       result.newPrice,
+			OldPrice:         result.oldPrice,
+			Changed:          result.changed,
+			IsNew:            result.oldPrice == nil && result.err == nil,
+			StructureChanged: result.rawTextChanged,
 		}
 		if result.err != nil {
 			cr.Error = result.err.Error()
@@ -104,7 +115,11 @@ func apiHistory(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			continue
 		}
-		resp = append(resp, historyResponse{Name: p.Name, Entries: entries})
+		respEntries := make([]historyEntryResponse, len(entries))
+		for j, e := range entries {
+			respEntries[j] = historyEntryResponse{PriceCents: e.PriceCents, Timestamp: e.Timestamp}
+		}
+		resp = append(resp, historyResponse{Name: p.Name, Entries: respEntries})
 	}
 	jsonOK(w, resp)
 }

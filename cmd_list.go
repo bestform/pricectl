@@ -25,7 +25,9 @@ func cmdList(jsonOutput bool) {
 			fmt.Fprintln(os.Stdout, "[]")
 		} else {
 			fmt.Println("no products configured")
-			fmt.Printf("add products to %s\n", mustConfigPath())
+			if path, err := configPath(); err == nil {
+				fmt.Printf("add products to %s\n", path)
+			}
 		}
 		return
 	}

@@ -282,7 +282,7 @@
     status.textContent = 'Fetching prices…';
 
     try {
-      const res = await fetch('/api/check');
+      const res = await fetch('/api/check', { method: 'POST' });
       const data = await res.json();
 
       const section = document.getElementById('results-section');

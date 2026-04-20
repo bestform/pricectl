@@ -70,16 +70,6 @@ func ensureConfigDir() error {
 	return os.MkdirAll(dir, 0755)
 }
 
-// mustConfigPath returns the config file path or exits on error.
-func mustConfigPath() string {
-	path, err := configPath()
-	if err != nil {
-		fmt.Fprintln(os.Stderr, "error:", err)
-		os.Exit(1)
-	}
-	return path
-}
-
 // saveConfig writes the config to ~/.pricewatcher/config.json.
 func saveConfig(cfg *Config) error {
 	if err := ensureConfigDir(); err != nil {

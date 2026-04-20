@@ -1,6 +1,9 @@
 package main
 
-import "time"
+import (
+	"log"
+	"time"
+)
 
 // checkResult holds the outcome of checking a single product's price.
 type checkResult struct {
@@ -47,7 +50,9 @@ func checkProduct(p Product, store Store, fetch fetchFn) checkResult {
 		if !r.changed {
 			if latest.ElementHTML == "" {
 				// Backfill: existing entry predates ElementHTML — update in place.
-				_ = store.UpdateLatestElementHTML(p.Name, elementHTML)
+				if err := store.UpdateLatestElementHTML(p.Name, elementHTML); err != nil {
+					log.Printf("warning: failed to backfill ElementHTML for %s: %v", p.Name, err)
+				}
 			} else if latest.ElementHTML != elementHTML {
 				// Same price, but element HTML changed — possible page restructure.
 				r.rawTextChanged = true
@@ -57,11 +62,13 @@ func checkProduct(p Product, store Store, fetch fetchFn) checkResult {
 
 	// Only store a new entry if the price changed or this is the first check.
 	if latest == nil || cents != latest.PriceCents {
-		_ = store.AddEntry(p.Name, PriceEntry{
+		if err := store.AddEntry(p.Name, PriceEntry{
 			PriceCents:  cents,
 			ElementHTML: elementHTML,
 			Timestamp:   time.Now().UTC(),
-		})
+		}); err != nil {
+			log.Printf("warning: failed to store price entry for %s: %v", p.Name, err)
+		}
 	}
 
 	return r
