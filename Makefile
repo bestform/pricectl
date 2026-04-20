@@ -1,4 +1,4 @@
-BINARY := pricewatcher
+BINARY := pricectl
 INSTALL_DIR := /usr/local/bin
 
 .PHONY: build test install serve

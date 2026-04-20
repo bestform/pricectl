@@ -27,7 +27,7 @@ func cmdAdd(url string) {
 	if len(candidates) == 0 {
 		fmt.Println(yellow("No price candidates found automatically."))
 		fmt.Println()
-		fmt.Println("You can add the product manually by editing ~/.pricewatcher/config.json")
+		fmt.Println("You can add the product manually by editing ~/.pricectl/config.json")
 		fmt.Println("and appending an entry like this:")
 		fmt.Println()
 		fmt.Println(`  {`)
@@ -126,7 +126,7 @@ func cmdAdd(url string) {
 	if product.Regex != "" {
 		fmt.Printf("  Regex:    %s\n", product.Regex)
 	}
-	fmt.Printf("\nRun 'pricewatcher check' to fetch the current price.\n")
+	fmt.Printf("\nRun 'pricectl check' to fetch the current price.\n")
 }
 
 // suggestRegex returns a capture-group regex if the text contains extra

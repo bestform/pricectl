@@ -20,13 +20,13 @@ type Config struct {
 	Products []Product `json:"products"`
 }
 
-// configDir returns the path to ~/.pricewatcher.
+// configDir returns the path to ~/.pricectl.
 func configDir() (string, error) {
 	home, err := os.UserHomeDir()
 	if err != nil {
 		return "", fmt.Errorf("could not determine home directory: %w", err)
 	}
-	return filepath.Join(home, ".pricewatcher"), nil
+	return filepath.Join(home, ".pricectl"), nil
 }
 
 // configPath returns the path to the config file.
@@ -61,7 +61,7 @@ func loadConfig() (*Config, error) {
 	return &cfg, nil
 }
 
-// ensureConfigDir creates ~/.pricewatcher if it does not exist.
+// ensureConfigDir creates ~/.pricectl if it does not exist.
 func ensureConfigDir() error {
 	dir, err := configDir()
 	if err != nil {
@@ -70,7 +70,7 @@ func ensureConfigDir() error {
 	return os.MkdirAll(dir, 0755)
 }
 
-// saveConfig writes the config to ~/.pricewatcher/config.json.
+// saveConfig writes the config to ~/.pricectl/config.json.
 func saveConfig(cfg *Config) error {
 	if err := ensureConfigDir(); err != nil {
 		return err

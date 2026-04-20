@@ -1,4 +1,4 @@
-module pricewatcher
+module pricectl
 
 go 1.25.2
 

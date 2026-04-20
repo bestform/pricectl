@@ -17,7 +17,7 @@ type priceData struct {
 	Prices map[string][]PriceEntry `json:"prices"`
 }
 
-// newJSONStore creates a jsonStore backed by ~/.pricewatcher/prices.json.
+// newJSONStore creates a jsonStore backed by ~/.pricectl/prices.json.
 func newJSONStore() (*jsonStore, error) {
 	dir, err := configDir()
 	if err != nil {

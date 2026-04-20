@@ -31,7 +31,7 @@ func main() {
 		cmdServe()
 	case "add":
 		if len(os.Args) < 3 {
-			fmt.Fprintln(os.Stderr, "usage: pricewatcher add <url>")
+			fmt.Fprintln(os.Stderr, "usage: pricectl add <url>")
 			os.Exit(1)
 		}
 		cmdAdd(os.Args[2])
@@ -53,7 +53,7 @@ func hasFlag(args []string, flag string) bool {
 }
 
 func printUsage() {
-	fmt.Println("usage: pricewatcher <command>")
+	fmt.Println("usage: pricectl <command>")
 	fmt.Println()
 	fmt.Println("commands:")
 	fmt.Println("  check [--json]                             fetch all products and report price changes")

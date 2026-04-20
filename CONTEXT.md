@@ -1,4 +1,4 @@
-# pricewatcher — Project Context
+# pricectl — Project Context
 
 This document captures the product decisions, architectural choices, and
 reasoning behind them. It is intended as a reference for picking up development
@@ -8,7 +8,7 @@ in the future without losing context.
 
 ## What the product is
 
-pricewatcher is a personal tool for tracking prices on websites. It runs
+pricectl is a personal tool for tracking prices on websites. It runs
 locally on the developer's own machine. The user configures a list of products
 — each with a URL, a CSS selector, and an optional regular expression — and the
 tool periodically fetches those pages, extracts the price, and reports changes.
@@ -28,7 +28,7 @@ Go was chosen for its simplicity, fast compile times, and the fact that it
 produces a single self-contained binary with no runtime dependencies. This
 makes installation and distribution trivial for a personal tool.
 
-### Data storage: JSON files in `~/.pricewatcher/`
+### Data storage: JSON files in `~/.pricectl/`
 
 No database. Two JSON files are sufficient for the scale of this tool
 (`config.json` for product configuration, `prices.json` for price history).

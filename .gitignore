@@ -1,5 +1,5 @@
 # Binary
-pricewatcher
+pricectl
 
 # Go build cache
 *.test

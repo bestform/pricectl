@@ -1,4 +1,4 @@
-# pricewatcher
+# pricectl
 
 A primarily command-line tool for monitoring prices on websites. It fetches
 configured product pages, extracts prices using CSS selectors and optional
@@ -21,13 +21,13 @@ productive tool, not as a substitute for engineering judgement.
 
 Build and install the binary using `make`:
 
-    make build    # builds ./pricewatcher
+    make build    # builds ./pricectl
     make test     # runs the test suite
     make install  # builds and moves the binary to /usr/local/bin
 
 ## Configuration
 
-pricewatcher stores its data in `~/.pricewatcher/`:
+pricectl stores its data in `~/.pricectl/`:
 
 - `config.json` — the list of products to watch
 - `prices.json` — the recorded price history
@@ -55,12 +55,12 @@ Fetches all configured products, compares the current price with the last
 recorded price, and prints a summary. Products whose price has changed are
 highlighted. This is the main command you will run periodically.
 
-    pricewatcher check
+    pricectl check
 
 Pass `--json` to get machine-readable output suitable for use in scripts and
 pipelines. Each product is represented as an object in a JSON array:
 
-    pricewatcher check --json
+    pricectl check --json
 
 ```json
 [
@@ -85,11 +85,11 @@ included as a string field when fetching or parsing a product failed.
 
 Lists all configured products with their most recently recorded price and URL.
 
-    pricewatcher list
+    pricectl list
 
 Pass `--json` for machine-readable output:
 
-    pricewatcher list --json
+    pricectl list --json
 
 ```json
 [
@@ -108,12 +108,12 @@ Pass `--json` for machine-readable output:
 Shows the full price history for a single product, including the direction and
 amount of each change. If no name is given, history for all products is shown.
 
-    pricewatcher history "Filter Table VST"
+    pricectl history "Filter Table VST"
 
 Pass `--json` for machine-readable output:
 
-    pricewatcher history --json
-    pricewatcher history --json "Filter Table VST"
+    pricectl history --json
+    pricectl history --json "Filter Table VST"
 
 ```json
 [
@@ -131,10 +131,10 @@ Pass `--json` for machine-readable output:
 
 Interactively adds a new product. The tool fetches the page, analyses the HTML
 to find elements that look like prices, and presents you with a numbered list
-of candidates. You pick one, give the product a name, and pricewatcher writes
+of candidates. You pick one, give the product a name, and pricectl writes
 the entry to your config file.
 
-    pricewatcher add https://kilohearts.com/products/filter_table
+    pricectl add https://kilohearts.com/products/filter_table
 
 ### serve
 
@@ -143,7 +143,7 @@ UI. The UI shows all configured products with their latest price, lets you
 trigger a price check with a button, and displays the full price history for
 each product.
 
-    pricewatcher serve
+    pricectl serve
 
 ## Running periodically
 
@@ -152,16 +152,16 @@ at 9:00:
 
     crontab -e
 
-    0 9 * * * /usr/local/bin/pricewatcher check >> ~/.pricewatcher/check.log 2>&1
+    0 9 * * * /usr/local/bin/pricectl check >> ~/.pricectl/check.log 2>&1
 
 For scripted use, `--json` makes it straightforward to pipe the output into
 other tools. For example, to list only products whose price dropped:
 
-    pricewatcher check --json | jq '[.[] | select(.changed and .price_cents < .old_price_cents)]'
+    pricectl check --json | jq '[.[] | select(.changed and .price_cents < .old_price_cents)]'
 
 ## Limitations
 
-pricewatcher only works with pages that include the price in the static HTML
+pricectl only works with pages that include the price in the static HTML
 response. Pages that load prices dynamically via JavaScript after the initial
 page load are not supported.
 

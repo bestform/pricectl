@@ -32,7 +32,7 @@ func cmdServe() {
 	mux.HandleFunc("/api/history", apiHistory)
 
 	addr := "127.0.0.1:" + port
-	fmt.Printf("pricewatcher UI running at http://%s\n", addr)
+	fmt.Printf("pricectl UI running at http://%s\n", addr)
 	if err := http.ListenAndServe(addr, mux); err != nil {
 		fmt.Fprintln(os.Stderr, "error:", err)
 		os.Exit(1)
