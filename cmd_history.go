@@ -1,11 +1,27 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
+	"io"
 	"os"
+	"time"
 )
 
-func cmdHistory(name string) {
+// historyEntryJSONOutput is the JSON representation of a single price entry,
+// omitting fields that are irrelevant for pipeline consumption.
+type historyEntryJSONOutput struct {
+	PriceCents int64     `json:"price_cents"`
+	Timestamp  time.Time `json:"timestamp"`
+}
+
+// historyJSONOutput is the JSON representation of a product's price history.
+type historyJSONOutput struct {
+	Name    string                   `json:"name"`
+	Entries []historyEntryJSONOutput `json:"entries"`
+}
+
+func cmdHistory(name string, jsonOutput bool) {
 	store, err := newJSONStore()
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "error:", err)
@@ -26,9 +42,33 @@ func cmdHistory(name string) {
 		}
 	}
 
+	if jsonOutput {
+		out := make([]historyJSONOutput, 0, len(names))
+		for _, n := range names {
+			entries, err := store.GetHistory(n)
+			if err != nil {
+				continue
+			}
+			jsonEntries := make([]historyEntryJSONOutput, len(entries))
+			for j, e := range entries {
+				jsonEntries[j] = historyEntryJSONOutput{PriceCents: e.PriceCents, Timestamp: e.Timestamp}
+			}
+			out = append(out, historyJSONOutput{Name: n, Entries: jsonEntries})
+		}
+		writeHistoryJSON(os.Stdout, out)
+		return
+	}
+
 	for _, n := range names {
 		printHistory(store, n)
 	}
+}
+
+// writeHistoryJSON encodes history for a list of products as a JSON array to w.
+func writeHistoryJSON(w io.Writer, items []historyJSONOutput) {
+	enc := json.NewEncoder(w)
+	enc.SetIndent("", "  ")
+	enc.Encode(items)
 }
 
 func printHistory(store Store, name string) {

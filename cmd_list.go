@@ -1,19 +1,32 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
+	"io"
 	"os"
 )
 
-func cmdList() {
+// listJSONOutput is the JSON representation of a single product in list output.
+type listJSONOutput struct {
+	Name       string `json:"name"`
+	URL        string `json:"url"`
+	PriceCents *int64 `json:"price_cents"`
+}
+
+func cmdList(jsonOutput bool) {
 	cfg, err := loadConfig()
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "error:", err)
 		os.Exit(1)
 	}
 	if len(cfg.Products) == 0 {
-		fmt.Println("no products configured")
-		fmt.Printf("add products to %s\n", mustConfigPath())
+		if jsonOutput {
+			fmt.Fprintln(os.Stdout, "[]")
+		} else {
+			fmt.Println("no products configured")
+			fmt.Printf("add products to %s\n", mustConfigPath())
+		}
 		return
 	}
 
@@ -21,6 +34,19 @@ func cmdList() {
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "error:", err)
 		os.Exit(1)
+	}
+
+	if jsonOutput {
+		items := make([]listJSONOutput, len(cfg.Products))
+		for i, p := range cfg.Products {
+			o := listJSONOutput{Name: p.Name, URL: p.URL}
+			if latest, err := store.LatestPrice(p.Name); err == nil && latest != nil {
+				o.PriceCents = &latest.PriceCents
+			}
+			items[i] = o
+		}
+		writeListJSON(os.Stdout, items)
+		return
 	}
 
 	fmt.Println(bold("── Products ──────────────────────────────────────"))
@@ -32,4 +58,11 @@ func cmdList() {
 		}
 		fmt.Printf("  %-40s %s  %s\n", p.Name, formatCents(latest.PriceCents), p.URL)
 	}
+}
+
+// writeListJSON encodes a list of products as a JSON array to w.
+func writeListJSON(w io.Writer, items []listJSONOutput) {
+	enc := json.NewEncoder(w)
+	enc.SetIndent("", "  ")
+	enc.Encode(items)
 }

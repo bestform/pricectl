@@ -13,15 +13,20 @@ func main() {
 
 	switch os.Args[1] {
 	case "check":
-		cmdCheck()
+		cmdCheck(hasFlag(os.Args[2:], "--json"))
 	case "list":
-		cmdList()
+		cmdList(hasFlag(os.Args[2:], "--json"))
 	case "history":
+		args := os.Args[2:]
+		jsonOutput := hasFlag(args, "--json")
 		name := ""
-		if len(os.Args) >= 3 {
-			name = os.Args[2]
+		for _, a := range args {
+			if a != "--json" {
+				name = a
+				break
+			}
 		}
-		cmdHistory(name)
+		cmdHistory(name, jsonOutput)
 	case "serve":
 		cmdServe()
 	case "add":
@@ -37,13 +42,23 @@ func main() {
 	}
 }
 
+// hasFlag reports whether args contains the given flag string.
+func hasFlag(args []string, flag string) bool {
+	for _, a := range args {
+		if a == flag {
+			return true
+		}
+	}
+	return false
+}
+
 func printUsage() {
 	fmt.Println("usage: pricewatcher <command>")
 	fmt.Println()
 	fmt.Println("commands:")
-	fmt.Println("  check                                      fetch all products and report price changes")
-	fmt.Println("  list                                       list all products with their latest price")
-	fmt.Println("  history [name]                             show price history (all products or one by name)")
+	fmt.Println("  check [--json]                             fetch all products and report price changes")
+	fmt.Println("  list [--json]                              list all products with their latest price")
+	fmt.Println("  history [--json] [name]                    show price history (all products or one by name)")
 	fmt.Println("  serve                                      start the web UI on http://127.0.0.1:8080")
 	fmt.Println("  add <url>                                  interactively add a new product")
 }

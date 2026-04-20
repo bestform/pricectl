@@ -57,18 +57,75 @@ highlighted. This is the main command you will run periodically.
 
     pricewatcher check
 
+Pass `--json` to get machine-readable output suitable for use in scripts and
+pipelines. Each product is represented as an object in a JSON array:
+
+    pricewatcher check --json
+
+```json
+[
+  {
+    "name": "Filter Table VST",
+    "url": "https://kilohearts.com/products/filter_table",
+    "price_cents": 4900,
+    "old_price_cents": 4900,
+    "changed": false,
+    "structure_changed": false,
+    "is_new": false
+  }
+]
+```
+
+`structure_changed` is set to `true` when the price value is unchanged but the
+HTML structure of the price element has changed — this can indicate a sale
+overlay or a page redesign and warrants manual verification. `error` is
+included as a string field when fetching or parsing a product failed.
+
 ### list
 
 Lists all configured products with their most recently recorded price and URL.
 
     pricewatcher list
 
+Pass `--json` for machine-readable output:
+
+    pricewatcher list --json
+
+```json
+[
+  {
+    "name": "Filter Table VST",
+    "url": "https://kilohearts.com/products/filter_table",
+    "price_cents": 4900
+  }
+]
+```
+
+`price_cents` is `null` for products that have not been checked yet.
+
 ### history
 
 Shows the full price history for a single product, including the direction and
-amount of each change.
+amount of each change. If no name is given, history for all products is shown.
 
     pricewatcher history "Filter Table VST"
+
+Pass `--json` for machine-readable output:
+
+    pricewatcher history --json
+    pricewatcher history --json "Filter Table VST"
+
+```json
+[
+  {
+    "name": "Filter Table VST",
+    "entries": [
+      { "price_cents": 4900, "timestamp": "2025-04-01T09:00:00Z" },
+      { "price_cents": 3900, "timestamp": "2025-04-10T09:00:00Z" }
+    ]
+  }
+]
+```
 
 ### add
 
@@ -96,6 +153,11 @@ at 9:00:
     crontab -e
 
     0 9 * * * /usr/local/bin/pricewatcher check >> ~/.pricewatcher/check.log 2>&1
+
+For scripted use, `--json` makes it straightforward to pipe the output into
+other tools. For example, to list only products whose price dropped:
+
+    pricewatcher check --json | jq '[.[] | select(.changed and .price_cents < .old_price_cents)]'
 
 ## Limitations
 
