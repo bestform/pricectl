@@ -90,7 +90,7 @@ func buildSelector(s *goquery.Selection) string {
 		return "#" + cssEscape(id)
 	}
 	tag := goquery.NodeName(s)
-	if class, exists := s.Attr("class"); exists && class != "" {
+	if class, exists := s.Attr("class"); exists && strings.Trim(class, " ") != "" {
 		first := strings.Fields(class)[0]
 		return tag + "." + cssEscape(first)
 	}
