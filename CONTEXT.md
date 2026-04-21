@@ -47,12 +47,15 @@ or JavaScript execution. This is a deliberate limitation: supporting dynamic
 pages would add significant complexity and dependencies for what is, in
 practice, rarely needed (most shops include the price in the initial HTML).
 
-### Flat file structure, no subpackages
+### Two-level structure: `main.go` + `internal/`
 
-All Go files live in a single `main` package in the root directory, grouped by
-a naming convention (`cmd_*.go` for commands, `store*.go` for storage, etc.).
-Splitting a tool of this size into subpackages would be over-engineering and
-would add friction without meaningful benefit.
+Only `main.go` lives in the project root. It handles argument parsing and
+command routing, then delegates to exported functions in the `internal/`
+package (Go package name `pricectl`). All domain logic, commands, storage,
+and the embedded web UI live in `internal/`, grouped by naming convention
+(`cmd_*.go` for commands, `store*.go` for storage, etc.). The `internal/`
+directory follows Go's convention of preventing external imports, which is
+appropriate for a self-contained tool.
 
 ### Dependency injection for testability
 
@@ -100,20 +103,20 @@ output (both CLI and API) since it is an internal implementation detail.
 | File | Purpose |
 |---|---|
 | `main.go` | Command routing only |
-| `cmd_check.go` | `check` command |
-| `cmd_list.go` | `list` command |
-| `cmd_history.go` | `history` command |
-| `cmd_add.go` | `add` command with interactive heuristic |
-| `cmd_serve.go` | `serve` command, starts HTTP server, embeds UI |
-| `server_api.go` | JSON API handlers for the web UI |
-| `ui/index.html` | Web UI (embedded into binary) |
-| `config.go` | Product config model, load/save/path helpers |
-| `storage.go` | `Store` interface and `PriceEntry` type |
-| `storage_json.go` | JSON-backed `Store` implementation |
-| `checker.go` | `checkProduct` with injected fetch function |
-| `fetcher.go` | HTTP fetch and price extraction logic |
-| `heuristic.go` | `FindPriceCandidates` for the `add` command |
-| `output.go` | Formatting helpers (colors, cents, diffs) |
+| `internal/cmd_check.go` | `check` command |
+| `internal/cmd_list.go` | `list` command |
+| `internal/cmd_history.go` | `history` command |
+| `internal/cmd_add.go` | `add` command with interactive heuristic |
+| `internal/cmd_serve.go` | `serve` command, starts HTTP server, embeds UI |
+| `internal/server_api.go` | JSON API handlers for the web UI |
+| `internal/ui/index.html` | Web UI (embedded into binary) |
+| `internal/config.go` | Product config model, load/save/path helpers |
+| `internal/storage.go` | `Store` interface and `PriceEntry` type |
+| `internal/storage_json.go` | JSON-backed `Store` implementation |
+| `internal/checker.go` | `checkProduct` with injected fetch function |
+| `internal/fetcher.go` | HTTP fetch and price extraction logic |
+| `internal/heuristic.go` | `FindPriceCandidates` for the `add` command |
+| `internal/output.go` | Formatting helpers (colors, cents, diffs) |
 | `Makefile` | `build`, `test`, `install`, `serve` targets |
 
 Test files exist for: `checker`, `fetcher` (parsePrice, extractPrice),
