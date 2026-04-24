@@ -5,11 +5,13 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sync"
 )
 
 // jsonStore implements Store using a single JSON file.
 type jsonStore struct {
 	path string
+	mu   sync.Mutex
 }
 
 // priceData is the on-disk structure of the prices file.
@@ -64,6 +66,8 @@ func (s *jsonStore) GetHistory(productName string) ([]PriceEntry, error) {
 }
 
 func (s *jsonStore) AddEntry(productName string, entry PriceEntry) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
 	pd, err := s.load()
 	if err != nil {
 		return err
@@ -85,6 +89,8 @@ func (s *jsonStore) LatestPrice(productName string) (*PriceEntry, error) {
 }
 
 func (s *jsonStore) UpdateLatestElementHTML(productName string, elementHTML string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
 	pd, err := s.load()
 	if err != nil {
 		return err

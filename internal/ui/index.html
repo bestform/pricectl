@@ -189,11 +189,6 @@
 
 <div id="status-bar"></div>
 
-<section id="results-section" style="display:none">
-  <h2>Check results</h2>
-  <div class="card" id="results-list"></div>
-</section>
-
 <section id="products-section">
   <h2>Products</h2>
   <div class="card" id="products-list"><div class="empty">Loading…</div></div>
@@ -241,7 +236,9 @@
             <div class="product-name">${esc(p.name)}</div>
             <div class="product-url"><a href="${esc(p.url)}" target="_blank" rel="noopener">${esc(p.url)}</a></div>
           </div>
-          <div class="price">${fmtCents(p.price_cents)}</div>
+          <div class="product-row-right" style="display:flex;align-items:center;gap:12px">
+            <div class="price">${fmtCents(p.price_cents)}</div>
+          </div>
         </div>`).join('');
     } catch(e) {
       el.innerHTML = `<div class="empty error-text">Failed to load products.</div>`;
@@ -277,61 +274,103 @@
   async function runCheck() {
     const btn = document.getElementById('check-btn');
     const status = document.getElementById('status-bar');
+
+    // Collect product names from the current product list rows
+    const rows = document.querySelectorAll('#products-list .product-row');
+    if (!rows.length) return;
+    const total = rows.length;
+    let done = 0;
+    let changed = 0;
+    let warnings = 0;
+    let errors = 0;
+
     btn.disabled = true;
     btn.classList.add('loading');
-    status.textContent = 'Fetching prices…';
+    status.textContent = `Checking… (0/${total} done)`;
 
-    try {
-      const res = await fetch('/api/check', { method: 'POST' });
-      const data = await res.json();
+    // Put each row into loading state: show spinner next to price
+    rows.forEach(row => {
+      const priceEl = row.querySelector('.price');
+      if (priceEl && !priceEl.querySelector('.row-spinner')) {
+        const sp = document.createElement('span');
+        sp.className = 'row-spinner spinner';
+        sp.style.display = 'inline-block';
+        sp.style.borderColor = 'var(--muted)';
+        sp.style.borderTopColor = 'transparent';
+        priceEl.appendChild(sp);
+      }
+      // Clear any previous badges
+      row.querySelectorAll('.check-badge').forEach(el => el.remove());
+    });
 
-      const section = document.getElementById('results-section');
-      const list = document.getElementById('results-list');
-      section.style.display = '';
+    // Map name → row element for fast lookup
+    const rowByName = {};
+    rows.forEach(row => {
+      const name = row.querySelector('.product-name')?.textContent;
+      if (name) rowByName[name] = row;
+    });
 
-      list.innerHTML = data.map(r => {
+    // Fire one request per product in parallel
+    const products = Array.from(rows).map(row => row.querySelector('.product-name')?.textContent).filter(Boolean);
+
+    const promises = products.map(async name => {
+      try {
+        const res = await fetch('/api/check?name=' + encodeURIComponent(name), { method: 'POST' });
+        const r = await res.json();
+        const row = rowByName[name];
+        if (!row) return;
+
+        // Remove spinner
+        row.querySelector('.row-spinner')?.remove();
+
+        const priceEl = row.querySelector('.price');
         if (r.error) {
-          return `<div class="product-row">
-            <div>
-              <div class="product-name">${esc(r.name)}</div>
-              <div class="product-url"><a href="${esc(r.url)}" target="_blank" rel="noopener">${esc(r.url)}</a></div>
-            </div>
-            <span class="badge badge-red error-text">ERROR: ${esc(r.error)}</span>
-          </div>`;
+          errors++;
+          const badge = document.createElement('span');
+          badge.className = 'badge badge-red check-badge';
+          badge.textContent = 'ERROR: ' + r.error;
+          row.querySelector('.product-row-right')?.prepend(badge);
+        } else {
+          if (r.changed) changed++;
+          if (r.structure_changed) warnings++;
+
+          // Update displayed price
+          if (priceEl) priceEl.textContent = fmtCents(r.price_cents);
+
+          // Insert result badge
+          const badgeHTML = r.is_new
+            ? '<span class="badge badge-new check-badge">★ new</span>'
+            : r.structure_changed
+              ? diffBadge(r.old_price_cents, r.price_cents).replace('class="badge', 'class="badge check-badge') + ' <span class="badge badge-yellow check-badge">⚠ verify price</span>'
+              : diffBadge(r.old_price_cents, r.price_cents).replace('class="badge', 'class="badge check-badge');
+          const wrapper = row.querySelector('.product-row-right');
+          if (wrapper && badgeHTML) wrapper.insertAdjacentHTML('afterbegin', badgeHTML);
         }
-        const badge = r.is_new
-          ? '<span class="badge badge-new">★ new</span>'
-          : r.raw_text_changed
-            ? diffBadge(r.old_price_cents, r.price_cents) + ' <span class="badge badge-yellow">⚠ verify price</span>'
-            : diffBadge(r.old_price_cents, r.price_cents);
-        return `<div class="product-row">
-          <div>
-            <div class="product-name">${esc(r.name)}</div>
-            <div class="product-url"><a href="${esc(r.url)}" target="_blank" rel="noopener">${esc(r.url)}</a></div>
-          </div>
-          <div style="display:flex;align-items:center;gap:12px">
-            ${badge}
-            <div class="price">${fmtCents(r.price_cents)}</div>
-          </div>
-        </div>`;
-      }).join('');
+      } catch(e) {
+        errors++;
+        const row = rowByName[name];
+        if (row) {
+          row.querySelector('.row-spinner')?.remove();
+          const badge = document.createElement('span');
+          badge.className = 'badge badge-red check-badge';
+          badge.textContent = 'ERROR: ' + e.message;
+          row.querySelector('.product-row-right')?.prepend(badge);
+        }
+      }
 
-      const changed  = data.filter(r => r.changed).length;
-      const warnings = data.filter(r => r.raw_text_changed).length;
-      const errors   = data.filter(r => r.error).length;
-      status.textContent = `Done. ${data.length} products checked, ${changed} changed, ${warnings} warnings, ${errors} errors.`;
+      done++;
+      status.textContent = done < total
+        ? `Checking… (${done}/${total} done)`
+        : `Done. ${total} products checked, ${changed} changed, ${warnings} warnings, ${errors} errors.`;
+    });
 
-      // Hide products section — check results already show current prices
-      document.getElementById('products-section').style.display = 'none';
+    await Promise.all(promises);
 
-      // Refresh history after a check
-      loadHistory();
-    } catch(e) {
-      status.textContent = 'Check failed: ' + e.message;
-    } finally {
-      btn.disabled = false;
-      btn.classList.remove('loading');
-    }
+    // Refresh history after all checks
+    loadHistory();
+
+    btn.disabled = false;
+    btn.classList.remove('loading');
   }
 
   function esc(str) {

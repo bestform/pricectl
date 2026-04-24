@@ -77,6 +77,36 @@ func apiCheck(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// If a name query parameter is given, check only that product.
+	if name := r.URL.Query().Get("name"); name != "" {
+		var found *Product
+		for i := range cfg.Products {
+			if cfg.Products[i].Name == name {
+				found = &cfg.Products[i]
+				break
+			}
+		}
+		if found == nil {
+			jsonError(w, fmt.Errorf("product %q not found", name), http.StatusNotFound)
+			return
+		}
+		result := checkProduct(*found, store, fetchPrice)
+		cr := checkResponse{
+			Name:             found.Name,
+			URL:              found.URL,
+			PriceCents:       result.newPrice,
+			OldPrice:         result.oldPrice,
+			Changed:          result.changed,
+			IsNew:            result.oldPrice == nil && result.err == nil,
+			StructureChanged: result.rawTextChanged,
+		}
+		if result.err != nil {
+			cr.Error = result.err.Error()
+		}
+		jsonOK(w, cr)
+		return
+	}
+
 	resp := make([]checkResponse, len(cfg.Products))
 	for i, p := range cfg.Products {
 		result := checkProduct(p, store, fetchPrice)
