@@ -83,8 +83,27 @@ step, no npm, no external framework. The server exposes three JSON endpoints
 The UI was added as a convenience layer on top of the CLI. The CLI remains the
 primary interface and is the one recommended for cron-based automation.
 
-When check results are displayed, the product list is hidden because the check
-results already contain the same information — showing both would be redundant.
+### Per-product parallel price checking in the web UI
+
+When the user clicks "Check prices", the UI fires one `POST /api/check?name=X`
+request per product in parallel rather than a single request for all products.
+Results appear in-place in the product list as they arrive — each row shows a
+spinner while its request is in flight, then updates with the new price and a
+change badge when the result comes back. The product list remains visible
+throughout; there is no separate results section.
+
+`/api/check?name=X` returns a single JSON object for that product, or 404 if
+the name is not found in the config. Without the `name` parameter the endpoint
+behaves as before, returning a JSON array for all products (used by the CLI and
+scripts).
+
+### Concurrent write safety in the JSON store
+
+Because the web UI fires multiple check requests in parallel, concurrent writes
+to `prices.json` are possible. `jsonStore` uses a `sync.Mutex` to serialise
+every load/save pair in `AddEntry` and `UpdateLatestElementHTML`. The slow part
+— fetching prices over HTTP — remains fully parallel; only the brief file I/O
+is serialised.
 
 ### Structure change detection
 
@@ -112,7 +131,7 @@ output (both CLI and API) since it is an internal implementation detail.
 | `internal/ui/index.html` | Web UI (embedded into binary) |
 | `internal/config.go` | Product config model, load/save/path helpers |
 | `internal/storage.go` | `Store` interface and `PriceEntry` type |
-| `internal/storage_json.go` | JSON-backed `Store` implementation |
+| `internal/storage_json.go` | JSON-backed `Store` implementation; uses `sync.Mutex` to serialise concurrent writes |
 | `internal/checker.go` | `checkProduct` with injected fetch function |
 | `internal/fetcher.go` | HTTP fetch and price extraction logic |
 | `internal/heuristic.go` | `FindPriceCandidates` for the `add` command |
