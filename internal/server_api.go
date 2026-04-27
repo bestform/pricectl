@@ -38,13 +38,15 @@ type historyResponse struct {
 	Entries []historyEntryResponse `json:"entries"`
 }
 
-func apiProducts(w http.ResponseWriter, r *http.Request) {
+// apiServer holds shared server-lifetime dependencies for the API handlers.
+// Constructing a single instance in CmdServe ensures the Store's mutex
+// serialises all concurrent writes across parallel HTTP requests.
+type apiServer struct {
+	store Store
+}
+
+func (s *apiServer) apiProducts(w http.ResponseWriter, r *http.Request) {
 	cfg, err := loadConfig()
-	if err != nil {
-		jsonError(w, err, http.StatusInternalServerError)
-		return
-	}
-	store, err := newJSONStore()
 	if err != nil {
 		jsonError(w, err, http.StatusInternalServerError)
 		return
@@ -53,7 +55,7 @@ func apiProducts(w http.ResponseWriter, r *http.Request) {
 	resp := make([]productResponse, len(cfg.Products))
 	for i, p := range cfg.Products {
 		pr := productResponse{Name: p.Name, URL: p.URL}
-		if latest, err := store.LatestPrice(p.Name); err == nil && latest != nil {
+		if latest, err := s.store.LatestPrice(p.Name); err == nil && latest != nil {
 			pr.PriceCents = &latest.PriceCents
 		}
 		resp[i] = pr
@@ -61,17 +63,12 @@ func apiProducts(w http.ResponseWriter, r *http.Request) {
 	jsonOK(w, resp)
 }
 
-func apiCheck(w http.ResponseWriter, r *http.Request) {
+func (s *apiServer) apiCheck(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, `{"error":"method not allowed"}`, http.StatusMethodNotAllowed)
 		return
 	}
 	cfg, err := loadConfig()
-	if err != nil {
-		jsonError(w, err, http.StatusInternalServerError)
-		return
-	}
-	store, err := newJSONStore()
 	if err != nil {
 		jsonError(w, err, http.StatusInternalServerError)
 		return
@@ -90,7 +87,7 @@ func apiCheck(w http.ResponseWriter, r *http.Request) {
 			jsonError(w, fmt.Errorf("product %q not found", name), http.StatusNotFound)
 			return
 		}
-		result := checkProduct(*found, store, fetchPrice)
+		result := checkProduct(*found, s.store, fetchPrice)
 		cr := checkResponse{
 			Name:             found.Name,
 			URL:              found.URL,
@@ -109,7 +106,7 @@ func apiCheck(w http.ResponseWriter, r *http.Request) {
 
 	resp := make([]checkResponse, len(cfg.Products))
 	for i, p := range cfg.Products {
-		result := checkProduct(p, store, fetchPrice)
+		result := checkProduct(p, s.store, fetchPrice)
 		cr := checkResponse{
 			Name:             p.Name,
 			URL:              p.URL,
@@ -127,13 +124,8 @@ func apiCheck(w http.ResponseWriter, r *http.Request) {
 	jsonOK(w, resp)
 }
 
-func apiHistory(w http.ResponseWriter, r *http.Request) {
+func (s *apiServer) apiHistory(w http.ResponseWriter, r *http.Request) {
 	cfg, err := loadConfig()
-	if err != nil {
-		jsonError(w, err, http.StatusInternalServerError)
-		return
-	}
-	store, err := newJSONStore()
 	if err != nil {
 		jsonError(w, err, http.StatusInternalServerError)
 		return
@@ -141,7 +133,7 @@ func apiHistory(w http.ResponseWriter, r *http.Request) {
 
 	resp := make([]historyResponse, 0, len(cfg.Products))
 	for _, p := range cfg.Products {
-		entries, err := store.GetHistory(p.Name)
+		entries, err := s.store.GetHistory(p.Name)
 		if err != nil {
 			continue
 		}
