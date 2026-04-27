@@ -36,7 +36,7 @@ func main() {
 			fmt.Fprintln(os.Stderr, "usage: pricectl add <url>")
 			os.Exit(1)
 		}
-		pricectl.CmdAdd(os.Args[2])
+		pricectl.CmdAdd(os.Args[2], pricectl.FetchDoc)
 	default:
 		fmt.Fprintf(os.Stderr, "unknown command: %s\n", os.Args[1])
 		printUsage()

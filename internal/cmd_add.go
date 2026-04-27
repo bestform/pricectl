@@ -9,9 +9,9 @@ import (
 	"strings"
 )
 
-func CmdAdd(url string) {
+func CmdAdd(url string, fetchDocument fetchDocFn) {
 	fmt.Printf("Loading %s ...\n", url)
-	doc, err := fetchDoc(url)
+	doc, err := fetchDocument(url)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "error loading page:", err)
 		os.Exit(1)
