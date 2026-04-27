@@ -33,16 +33,6 @@ func (m *memStore) LatestPrice(name string) (*PriceEntry, error) {
 	return &e, nil
 }
 
-func (m *memStore) UpdateLatestElementHTML(name string, elementHTML string) error {
-	entries := m.entries[name]
-	if len(entries) == 0 {
-		return nil
-	}
-	entries[len(entries)-1].ElementHTML = elementHTML
-	m.entries[name] = entries
-	return nil
-}
-
 // stubFetch returns a fetchFn that always returns the given cents value and raw text.
 func stubFetch(cents int64) fetchFn {
 	return stubFetchWithRaw(cents, fmt.Sprintf("%d", cents))
@@ -199,9 +189,10 @@ func TestCheckProduct_RawTextChanged(t *testing.T) {
 	}
 }
 
-func TestCheckProduct_BackfillRawText(t *testing.T) {
+func TestCheckProduct_EmptyElementHTMLTreatedAsStructureChange(t *testing.T) {
 	store := newMemStore()
-	// Simulate a pre-existing entry without ElementHTML (empty string)
+	// Entry with no ElementHTML — same price, but current fetch returns HTML.
+	// Without backfill, this is indistinguishable from a structure change.
 	_ = store.AddEntry(testProduct.Name, PriceEntry{PriceCents: 2999, Timestamp: time.Now()})
 
 	r := checkProduct(testProduct, store, stubFetchWithRaw(2999, `<span class="price">29,99</span>`))
@@ -209,16 +200,16 @@ func TestCheckProduct_BackfillRawText(t *testing.T) {
 	if r.err != nil {
 		t.Fatalf("unexpected error: %v", r.err)
 	}
-	if r.rawTextChanged {
-		t.Errorf("rawTextChanged should be false during backfill (no previous ElementHTML to compare)")
+	if r.changed {
+		t.Errorf("changed should be false: price is the same")
+	}
+	if !r.rawTextChanged {
+		t.Errorf("rawTextChanged should be true: stored ElementHTML is empty, current is not")
 	}
 
-	// No new entry should have been added — backfill updates in place
+	// No new entry should have been added
 	entries, _ := store.GetHistory(testProduct.Name)
 	if len(entries) != 1 {
-		t.Errorf("expected 1 stored entry after backfill, got %d", len(entries))
-	}
-	if entries[0].ElementHTML != `<span class="price">29,99</span>` {
-		t.Errorf("ElementHTML after backfill = %q, want %q", entries[0].ElementHTML, `<span class="price">29,99</span>`)
+		t.Errorf("expected 1 stored entry, got %d", len(entries))
 	}
 }

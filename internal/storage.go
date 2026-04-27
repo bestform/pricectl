@@ -24,9 +24,4 @@ type Store interface {
 	// LatestPrice returns the most recent price entry for a product.
 	// Returns nil, nil if no entries exist yet.
 	LatestPrice(productName string) (*PriceEntry, error)
-
-	// UpdateLatestElementHTML sets the ElementHTML field on the most recent entry
-	// for a product. Used to backfill ElementHTML on existing entries that
-	// predate the field's introduction.
-	UpdateLatestElementHTML(productName string, elementHTML string) error
 }

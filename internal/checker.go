@@ -24,9 +24,6 @@ type fetchFn func(Product) (int64, string, error)
 // fetch function, compares it with the stored latest price, persists a new
 // entry if the price changed, and returns a checkResult.
 //
-// Backfill: if the latest stored entry has no ElementHTML (predates the field),
-// UpdateLatestElementHTML is called to fill it in without adding a new history entry.
-//
 // ElementHTML change detection: if the price is unchanged but the outerHTML of
 // the matched element differs from the stored value, rawTextChanged is set to
 // true in the result so callers can warn the user.
@@ -47,16 +44,9 @@ func checkProduct(p Product, store Store, fetch fetchFn) checkResult {
 		r.oldPrice = &latest.PriceCents
 		r.changed = cents != latest.PriceCents
 
-		if !r.changed {
-			if latest.ElementHTML == "" {
-				// Backfill: existing entry predates ElementHTML — update in place.
-				if err := store.UpdateLatestElementHTML(p.Name, elementHTML); err != nil {
-					log.Printf("warning: failed to backfill ElementHTML for %s: %v", p.Name, err)
-				}
-			} else if latest.ElementHTML != elementHTML {
-				// Same price, but element HTML changed — possible page restructure.
-				r.rawTextChanged = true
-			}
+		if !r.changed && latest.ElementHTML != elementHTML {
+			// Same price, but element HTML changed — possible page restructure.
+			r.rawTextChanged = true
 		}
 	}
 
