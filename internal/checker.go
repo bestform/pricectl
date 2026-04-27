@@ -20,6 +20,12 @@ type checkResult struct {
 // Defined as a type so tests can inject a stub.
 type fetchFn func(Product) (int64, string, error)
 
+// isNew reports whether this result represents the first-ever price check for
+// the product — no previous entry existed and no fetch error occurred.
+func (r checkResult) isNew() bool {
+	return r.oldPrice == nil && r.err == nil
+}
+
 // checkProduct fetches the current price for a product using the provided
 // fetch function, compares it with the stored latest price, persists a new
 // entry if the price changed, and returns a checkResult.
