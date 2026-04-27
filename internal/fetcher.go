@@ -11,20 +11,26 @@ import (
 	"github.com/PuerkitoBio/goquery"
 )
 
+// fetchDocFn is the signature for a function that fetches a URL and returns
+// a parsed HTML document. Defined as a type so callers (e.g. CmdAdd) can
+// inject a stub without making real HTTP requests.
+type fetchDocFn func(url string) (*goquery.Document, error)
+
 // fetchPrice fetches the URL of a product, applies the CSS selector and
 // optional regex, and returns the price in cents and the outerHTML of the
 // matched element.
 func fetchPrice(p Product) (int64, string, error) {
-	doc, err := fetchDoc(p.URL)
+	doc, err := FetchDoc(p.URL)
 	if err != nil {
 		return 0, "", err
 	}
 	return extractPrice(doc, p.Selector, p.Regex)
 }
 
-// fetchDoc performs an HTTP GET and returns a parsed goquery document.
+// FetchDoc performs an HTTP GET and returns a parsed goquery document.
 // A browser-like User-Agent is set to avoid simple bot-detection blocks.
-func fetchDoc(url string) (*goquery.Document, error) {
+// It is the concrete fetchDocFn adapter used by CmdAdd in production.
+func FetchDoc(url string) (*goquery.Document, error) {
 	client := &http.Client{Timeout: 15 * time.Second}
 
 	req, err := http.NewRequest("GET", url, nil)
