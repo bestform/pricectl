@@ -140,6 +140,7 @@ output (both CLI and API) since it is an internal implementation detail.
 | `internal/fetcher.go` | HTTP fetch and price extraction logic |
 | `internal/heuristic.go` | `FindPriceCandidates` for the `add` command |
 | `internal/output.go` | Formatting helpers (colors, cents, diffs) |
+| `internal/output_json.go` | Canonical JSON output types shared by CLI and API (`ProductOutput`, `CheckOutput`, `HistoryOutput`) |
 | `Makefile` | `build`, `test`, `install`, `serve` targets |
 
 Test files exist for: `checker`, `fetcher` (parsePrice, extractPrice),

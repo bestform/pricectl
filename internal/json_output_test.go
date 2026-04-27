@@ -24,7 +24,7 @@ func TestWriteCheckJSON_Basic(t *testing.T) {
 	var buf bytes.Buffer
 	writeCheckJSON(&buf, results)
 
-	var out []checkJSONOutput
+	var out []CheckOutput
 	if err := json.Unmarshal(buf.Bytes(), &out); err != nil {
 		t.Fatalf("invalid JSON: %v\noutput: %s", err, buf.String())
 	}
@@ -59,7 +59,7 @@ func TestWriteCheckJSON_WithError(t *testing.T) {
 	var buf bytes.Buffer
 	writeCheckJSON(&buf, results)
 
-	var out []checkJSONOutput
+	var out []CheckOutput
 	if err := json.Unmarshal(buf.Bytes(), &out); err != nil {
 		t.Fatalf("invalid JSON: %v", err)
 	}
@@ -85,7 +85,7 @@ func TestWriteCheckJSON_StructureChanged(t *testing.T) {
 	var buf bytes.Buffer
 	writeCheckJSON(&buf, results)
 
-	var out []checkJSONOutput
+	var out []CheckOutput
 	if err := json.Unmarshal(buf.Bytes(), &out); err != nil {
 		t.Fatalf("invalid JSON: %v", err)
 	}
@@ -109,7 +109,7 @@ func TestWriteCheckJSON_IsNew(t *testing.T) {
 	var buf bytes.Buffer
 	writeCheckJSON(&buf, results)
 
-	var out []checkJSONOutput
+	var out []CheckOutput
 	if err := json.Unmarshal(buf.Bytes(), &out); err != nil {
 		t.Fatalf("invalid JSON: %v", err)
 	}
@@ -122,7 +122,7 @@ func TestWriteCheckJSON_Empty(t *testing.T) {
 	var buf bytes.Buffer
 	writeCheckJSON(&buf, []checkResult{})
 
-	var out []checkJSONOutput
+	var out []CheckOutput
 	if err := json.Unmarshal(buf.Bytes(), &out); err != nil {
 		t.Fatalf("invalid JSON: %v", err)
 	}
@@ -135,7 +135,7 @@ func TestWriteCheckJSON_Empty(t *testing.T) {
 
 func TestWriteListJSON_Basic(t *testing.T) {
 	price := int64(1999)
-	items := []listJSONOutput{
+	items := []ProductOutput{
 		{Name: "Widget", URL: "https://example.com/widget", PriceCents: &price},
 		{Name: "Gadget", URL: "https://example.com/gadget", PriceCents: nil},
 	}
@@ -143,7 +143,7 @@ func TestWriteListJSON_Basic(t *testing.T) {
 	var buf bytes.Buffer
 	writeListJSON(&buf, items)
 
-	var out []listJSONOutput
+	var out []ProductOutput
 	if err := json.Unmarshal(buf.Bytes(), &out); err != nil {
 		t.Fatalf("invalid JSON: %v", err)
 	}
@@ -163,9 +163,9 @@ func TestWriteListJSON_Basic(t *testing.T) {
 
 func TestWriteListJSON_Empty(t *testing.T) {
 	var buf bytes.Buffer
-	writeListJSON(&buf, []listJSONOutput{})
+	writeListJSON(&buf, []ProductOutput{})
 
-	var out []listJSONOutput
+	var out []ProductOutput
 	if err := json.Unmarshal(buf.Bytes(), &out); err != nil {
 		t.Fatalf("invalid JSON: %v", err)
 	}
@@ -178,10 +178,10 @@ func TestWriteListJSON_Empty(t *testing.T) {
 
 func TestWriteHistoryJSON_Basic(t *testing.T) {
 	ts := time.Date(2025, 1, 15, 10, 0, 0, 0, time.UTC)
-	items := []historyJSONOutput{
+	items := []HistoryOutput{
 		{
 			Name: "Widget",
-			Entries: []historyEntryJSONOutput{
+			Entries: []HistoryEntryOutput{
 				{PriceCents: 3999, Timestamp: ts},
 				{PriceCents: 2999, Timestamp: ts.Add(24 * time.Hour)},
 			},
@@ -191,7 +191,7 @@ func TestWriteHistoryJSON_Basic(t *testing.T) {
 	var buf bytes.Buffer
 	writeHistoryJSON(&buf, items)
 
-	var out []historyJSONOutput
+	var out []HistoryOutput
 	if err := json.Unmarshal(buf.Bytes(), &out); err != nil {
 		t.Fatalf("invalid JSON: %v", err)
 	}
@@ -213,14 +213,14 @@ func TestWriteHistoryJSON_Basic(t *testing.T) {
 }
 
 func TestWriteHistoryJSON_EmptyEntries(t *testing.T) {
-	items := []historyJSONOutput{
-		{Name: "Widget", Entries: []historyEntryJSONOutput{}},
+	items := []HistoryOutput{
+		{Name: "Widget", Entries: []HistoryEntryOutput{}},
 	}
 
 	var buf bytes.Buffer
 	writeHistoryJSON(&buf, items)
 
-	var out []historyJSONOutput
+	var out []HistoryOutput
 	if err := json.Unmarshal(buf.Bytes(), &out); err != nil {
 		t.Fatalf("invalid JSON: %v", err)
 	}
@@ -231,9 +231,9 @@ func TestWriteHistoryJSON_EmptyEntries(t *testing.T) {
 
 func TestWriteHistoryJSON_Empty(t *testing.T) {
 	var buf bytes.Buffer
-	writeHistoryJSON(&buf, []historyJSONOutput{})
+	writeHistoryJSON(&buf, []HistoryOutput{})
 
-	var out []historyJSONOutput
+	var out []HistoryOutput
 	if err := json.Unmarshal(buf.Bytes(), &out); err != nil {
 		t.Fatalf("invalid JSON: %v", err)
 	}

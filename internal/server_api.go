@@ -4,39 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"time"
 )
-
-// productResponse is the JSON representation of a product with its latest price.
-type productResponse struct {
-	Name       string `json:"name"`
-	URL        string `json:"url"`
-	PriceCents *int64 `json:"price_cents"`
-}
-
-// checkResponse is the JSON representation of a check result.
-type checkResponse struct {
-	Name             string `json:"name"`
-	URL              string `json:"url"`
-	PriceCents       int64  `json:"price_cents"`
-	OldPrice         *int64 `json:"old_price_cents"`
-	Changed          bool   `json:"changed"`
-	IsNew            bool   `json:"is_new"`
-	StructureChanged bool   `json:"structure_changed"`
-	Error            string `json:"error,omitempty"`
-}
-
-// historyEntryResponse is the JSON representation of a single price entry for the API.
-type historyEntryResponse struct {
-	PriceCents int64     `json:"price_cents"`
-	Timestamp  time.Time `json:"timestamp"`
-}
-
-// historyResponse is the JSON representation of history for all products.
-type historyResponse struct {
-	Name    string                 `json:"name"`
-	Entries []historyEntryResponse `json:"entries"`
-}
 
 // apiServer holds shared server-lifetime dependencies for the API handlers.
 // Constructing a single instance in CmdServe ensures the Store's mutex
@@ -52,13 +20,13 @@ func (s *apiServer) apiProducts(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp := make([]productResponse, len(cfg.Products))
+	resp := make([]ProductOutput, len(cfg.Products))
 	for i, p := range cfg.Products {
-		pr := productResponse{Name: p.Name, URL: p.URL}
+		o := ProductOutput{Name: p.Name, URL: p.URL}
 		if latest, err := s.store.LatestPrice(p.Name); err == nil && latest != nil {
-			pr.PriceCents = &latest.PriceCents
+			o.PriceCents = &latest.PriceCents
 		}
-		resp[i] = pr
+		resp[i] = o
 	}
 	jsonOK(w, resp)
 }
@@ -88,38 +56,38 @@ func (s *apiServer) apiCheck(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		result := checkProduct(*found, s.store, fetchPrice)
-		cr := checkResponse{
+		o := CheckOutput{
 			Name:             found.Name,
 			URL:              found.URL,
 			PriceCents:       result.newPrice,
-			OldPrice:         result.oldPrice,
+			OldPriceCents:    result.oldPrice,
 			Changed:          result.changed,
-			IsNew:            result.oldPrice == nil && result.err == nil,
+			IsNew:            result.isNew(),
 			StructureChanged: result.rawTextChanged,
 		}
 		if result.err != nil {
-			cr.Error = result.err.Error()
+			o.Error = result.err.Error()
 		}
-		jsonOK(w, cr)
+		jsonOK(w, o)
 		return
 	}
 
-	resp := make([]checkResponse, len(cfg.Products))
+	resp := make([]CheckOutput, len(cfg.Products))
 	for i, p := range cfg.Products {
 		result := checkProduct(p, s.store, fetchPrice)
-		cr := checkResponse{
+		o := CheckOutput{
 			Name:             p.Name,
 			URL:              p.URL,
 			PriceCents:       result.newPrice,
-			OldPrice:         result.oldPrice,
+			OldPriceCents:    result.oldPrice,
 			Changed:          result.changed,
-			IsNew:            result.oldPrice == nil && result.err == nil,
+			IsNew:            result.isNew(),
 			StructureChanged: result.rawTextChanged,
 		}
 		if result.err != nil {
-			cr.Error = result.err.Error()
+			o.Error = result.err.Error()
 		}
-		resp[i] = cr
+		resp[i] = o
 	}
 	jsonOK(w, resp)
 }
@@ -131,17 +99,17 @@ func (s *apiServer) apiHistory(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp := make([]historyResponse, 0, len(cfg.Products))
+	resp := make([]HistoryOutput, 0, len(cfg.Products))
 	for _, p := range cfg.Products {
 		entries, err := s.store.GetHistory(p.Name)
 		if err != nil {
 			continue
 		}
-		respEntries := make([]historyEntryResponse, len(entries))
+		respEntries := make([]HistoryEntryOutput, len(entries))
 		for j, e := range entries {
-			respEntries[j] = historyEntryResponse{PriceCents: e.PriceCents, Timestamp: e.Timestamp}
+			respEntries[j] = HistoryEntryOutput{PriceCents: e.PriceCents, Timestamp: e.Timestamp}
 		}
-		resp = append(resp, historyResponse{Name: p.Name, Entries: respEntries})
+		resp = append(resp, HistoryOutput{Name: p.Name, Entries: respEntries})
 	}
 	jsonOK(w, resp)
 }

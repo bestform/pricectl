@@ -7,13 +7,6 @@ import (
 	"os"
 )
 
-// listJSONOutput is the JSON representation of a single product in list output.
-type listJSONOutput struct {
-	Name       string `json:"name"`
-	URL        string `json:"url"`
-	PriceCents *int64 `json:"price_cents"`
-}
-
 func CmdList(jsonOutput bool) {
 	cfg, err := loadConfig()
 	if err != nil {
@@ -39,9 +32,9 @@ func CmdList(jsonOutput bool) {
 	}
 
 	if jsonOutput {
-		items := make([]listJSONOutput, len(cfg.Products))
+		items := make([]ProductOutput, len(cfg.Products))
 		for i, p := range cfg.Products {
-			o := listJSONOutput{Name: p.Name, URL: p.URL}
+			o := ProductOutput{Name: p.Name, URL: p.URL}
 			if latest, err := store.LatestPrice(p.Name); err == nil && latest != nil {
 				o.PriceCents = &latest.PriceCents
 			}
@@ -63,7 +56,7 @@ func CmdList(jsonOutput bool) {
 }
 
 // writeListJSON encodes a list of products as a JSON array to w.
-func writeListJSON(w io.Writer, items []listJSONOutput) {
+func writeListJSON(w io.Writer, items []ProductOutput) {
 	enc := json.NewEncoder(w)
 	enc.SetIndent("", "  ")
 	enc.Encode(items)

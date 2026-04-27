@@ -7,18 +7,6 @@ import (
 	"os"
 )
 
-// checkJSONOutput is the JSON representation of a single check result.
-type checkJSONOutput struct {
-	Name             string `json:"name"`
-	URL              string `json:"url"`
-	PriceCents       int64  `json:"price_cents"`
-	OldPriceCents    *int64 `json:"old_price_cents"`
-	Changed          bool   `json:"changed"`
-	StructureChanged bool   `json:"structure_changed"`
-	IsNew            bool   `json:"is_new"`
-	Error            string `json:"error,omitempty"`
-}
-
 func CmdCheck(jsonOutput bool) {
 	cfg, err := loadConfig()
 	if err != nil {
@@ -94,16 +82,16 @@ func CmdCheck(jsonOutput bool) {
 
 // writeCheckJSON encodes check results as a JSON array to w.
 func writeCheckJSON(w io.Writer, results []checkResult) {
-	out := make([]checkJSONOutput, len(results))
+	out := make([]CheckOutput, len(results))
 	for i, r := range results {
-		o := checkJSONOutput{
+		o := CheckOutput{
 			Name:             r.product.Name,
 			URL:              r.product.URL,
 			PriceCents:       r.newPrice,
 			OldPriceCents:    r.oldPrice,
 			Changed:          r.changed,
 			StructureChanged: r.rawTextChanged,
-			IsNew:            r.oldPrice == nil && r.err == nil,
+			IsNew:            r.isNew(),
 		}
 		if r.err != nil {
 			o.Error = r.err.Error()
