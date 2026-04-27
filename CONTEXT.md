@@ -60,8 +60,11 @@ appropriate for a self-contained tool.
 ### Dependency injection for testability
 
 The `checkProduct` function accepts a `fetchFn` parameter instead of calling
-the HTTP layer directly. This allows tests to inject a stub and run without
-making real network requests. The same pattern applies to the `Store` interface.
+the HTTP layer directly. `CmdAdd` accepts a `fetchDocFn` parameter for the same
+reason — it receives the parsed HTML document from an injected function rather
+than calling the HTTP layer directly. This allows tests to inject stubs and run
+without making real network requests. The same pattern applies to the `Store`
+interface.
 
 ### The `inspect` command was removed
 
@@ -100,10 +103,11 @@ scripts).
 ### Concurrent write safety in the JSON store
 
 Because the web UI fires multiple check requests in parallel, concurrent writes
-to `prices.json` are possible. `jsonStore` uses a `sync.Mutex` to serialise
-every load/save pair in `AddEntry` and `UpdateLatestElementHTML`. The slow part
-— fetching prices over HTTP — remains fully parallel; only the brief file I/O
-is serialised.
+to `prices.json` are possible. A single `jsonStore` instance is constructed at
+server startup and shared across all API handlers. `jsonStore` uses a
+`sync.Mutex` to serialise every load/save pair in `AddEntry`. The slow part —
+fetching prices over HTTP — remains fully parallel; only the brief file I/O is
+serialised.
 
 ### Structure change detection
 
@@ -139,8 +143,8 @@ output (both CLI and API) since it is an internal implementation detail.
 | `Makefile` | `build`, `test`, `install`, `serve` targets |
 
 Test files exist for: `checker`, `fetcher` (parsePrice, extractPrice),
-`heuristic`, `output`, `json_output` (all JSON write functions), and `main`
-(hasFlag utility).
+`heuristic`, `output`, `json_output` (all JSON write functions), `cmd_add`
+(suggestRegex, fetchDocFn seam), and `main` (hasFlag utility).
 
 ---
 
